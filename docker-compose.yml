@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: db
+    image: postgres:latest
+    env_file:
+      - .env
+    ports:
+      - "5436:5432"
+    volumes:
+      - .database:/var/lib/postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+  app:
+    container_name: app
+    build: ./
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - POSTGRES_PASSWORD=root

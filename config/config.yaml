@@ -1,0 +1,11 @@
+storage: postgres
+grpcPort: 8082
+httpPort: 8082
+linksLength: 10
+postgres:
+  login: admin
+  host: localhost
+  port: 5436
+  name: postgres
+cache:
+  capacity: 1000

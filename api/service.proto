@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "/pkg";
+
+import "google/api/annotations.proto";
+
+service Microservice {
+  rpc CreateShortLink(CreateShortLinkRequest) returns (CreateShortLinkResponse) {
+    option (google.api.http) = {
+      post: "/shortLink"
+      body: "*"
+    };
+  }
+  rpc GetInitialLink(GetInitialLinkRequest) returns (GetInitialLinkResponse) {
+    option (google.api.http) = {
+      post: "/fullLink"
+      body: "*"
+    };
+  }
+}
+
+message CreateShortLinkRequest {
+  string link = 1;
+};
+
+message CreateShortLinkResponse {
+  string code = 1;
+};
+
+message GetInitialLinkRequest {
+  string code = 1;
+};
+
+message GetInitialLinkResponse {
+  string link = 1;
+};
