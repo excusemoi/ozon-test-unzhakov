@@ -1,18 +1,28 @@
 package cache
 
 import (
+	"github.com/joho/godotenv"
 	"ozon-test-unzhakov/internal/model"
+	"path/filepath"
 	"testing"
 )
 
 func TestNewLinkStorage(t *testing.T) {
-	_, err := NewLinkStorage()
+	err := godotenv.Load(filepath.Join("..", "..", "..", ".env"))
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = NewLinkStorage()
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestLinkStorage_Create(t *testing.T) {
+	err := godotenv.Load(filepath.Join("..", "..", "..", ".env"))
+	if err != nil {
+		t.Error(err)
+	}
 	s, err := NewLinkStorage()
 	if err != nil {
 		t.Fatal(err)
@@ -47,6 +57,11 @@ func TestLinkStorage_Create(t *testing.T) {
 }
 
 func TestLinkStorage_Get(t *testing.T) {
+	err := godotenv.Load(filepath.Join("..", "..", "..", ".env"))
+	if err != nil {
+		t.Error(err)
+	}
+
 	s, _ := NewLinkStorage()
 
 	cases := []struct {
@@ -72,13 +87,18 @@ func TestLinkStorage_Get(t *testing.T) {
 
 	for i := range cases {
 		s.CreateLink(cases[i].input.link)
-		if _, err := s.GetLink(cases[i].input.link.Link); err != nil {
+		if _, err := s.Get(cases[i].input.link); err != nil {
 			t.Error(err)
 		}
 	}
 }
 
 func TestLinkStorage_Delete(t *testing.T) {
+	err := godotenv.Load(filepath.Join("..", "..", "..", ".env"))
+	if err != nil {
+		t.Error(err)
+	}
+
 	s, _ := NewLinkStorage()
 
 	cases := []struct {
@@ -104,7 +124,7 @@ func TestLinkStorage_Delete(t *testing.T) {
 
 	for i := range cases {
 		s.CreateLink(cases[i].input.link)
-		if err := s.DeleteLink(cases[i].input.link.Link); err != nil {
+		if err := s.DeleteLink(cases[i].input.link); err != nil {
 			t.Error(err)
 		}
 	}

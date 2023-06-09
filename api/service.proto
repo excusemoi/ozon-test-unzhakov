@@ -9,14 +9,18 @@ import "google/api/annotations.proto";
 service Microservice {
   rpc CreateShortLink(CreateShortLinkRequest) returns (CreateShortLinkResponse) {
     option (google.api.http) = {
-      post: "/shortLink"
+      post: "/createShortLink"
       body: "*"
     };
   }
   rpc GetInitialLink(GetInitialLinkRequest) returns (GetInitialLinkResponse) {
     option (google.api.http) = {
-      post: "/fullLink"
-      body: "*"
+      get: "/getInitialLink/{code}"
+    };
+  }
+  rpc RedirectToInitialLink(RedirectToInitialLinkRequest) returns (EmptyMessage) {
+    option (google.api.http) = {
+      get: "/{code}"
     };
   }
 }
@@ -36,3 +40,9 @@ message GetInitialLinkRequest {
 message GetInitialLinkResponse {
   string link = 1;
 };
+
+message RedirectToInitialLinkRequest {
+  string code = 1;
+};
+
+message EmptyMessage {};

@@ -1,6 +1,6 @@
-storage: postgres
-grpcPort: 8082
-httpPort: 8082
+storageType: cache
+grpcAddress: 127.0.0.1:8082
+httpAddress: :8081
 linksLength: 10
 postgres:
   login: admin

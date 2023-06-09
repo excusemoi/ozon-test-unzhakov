@@ -25,12 +25,9 @@ services:
   app:
     container_name: app
     build: ./
-    env_file:
-      - .env
     ports:
-      - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      - POSTGRES_PASSWORD=root

@@ -5,48 +5,56 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/viper"
+	"os"
 	"ozon-test-unzhakov/internal/config"
 	"ozon-test-unzhakov/internal/model"
+	"ozon-test-unzhakov/internal/storage/storage"
 	"path/filepath"
 	"sync"
 )
 
 type linkStorage struct {
 	sync.RWMutex
-	hash     map[string]*list.Element
-	list     list.List
-	capacity int64
+	hashByLink map[string]*list.Element
+	hashByCode map[string]*list.Element
+	list       list.List
+	capacity   int64
 }
 
-func NewLinkStorage() (interfaces.LinkStorage, error) {
-	err := config.InitConfig(filepath.Join("..", "..", "..", "config"), "config", "yaml")
+func NewLinkStorage() (storage.LinkStorage, error) {
+	err := config.InitConfig(filepath.Join("..", "..", "..", "config"), os.Getenv("CONFIG_NAME"), "yaml")
 	if err != nil {
 		return nil, err
 	}
 	ls := &linkStorage{
-		hash:     map[string]*list.Element{},
-		list:     list.List{},
-		capacity: viper.GetInt64("cache.capacity"),
+		hashByLink: map[string]*list.Element{},
+		hashByCode: map[string]*list.Element{},
+		list:       list.List{},
+		capacity:   viper.GetInt64("cache.capacity"),
 	}
 	return ls, nil
 }
 
-func (ls *linkStorage) GetLink(l string) (*model.Link, error) {
+func (ls *linkStorage) Get(l *model.Link) (*model.Link, error) {
 	ls.RLock()
 	defer ls.RUnlock()
-	if link, in := ls.hash[l]; in {
+	link, inByLinkHash := ls.hashByLink[l.Link]
+	link, inByCodeHash := ls.hashByCode[l.Code]
+	if inByLinkHash || inByCodeHash {
 		v := ls.list.Remove(link).(*model.Link)
-		ls.hash[v.Link] = ls.list.PushBack(v)
+		ls.hashByLink[v.Link] = ls.list.PushBack(v)
+		ls.hashByLink[v.Code] = ls.hashByLink[v.Link]
 		return v, nil
 	}
-	return nil, errors.New(fmt.Sprintf("linkStorageCache: can't find link %s", l))
+	return nil, errors.New(fmt.Sprintf("linkStorageCache: can't find link %v", l))
 }
 
 func (ls *linkStorage) CreateLink(l *model.Link) (*model.Link, error) {
 	ls.Lock()
 	defer ls.Unlock()
-	if link, in := ls.hash[l.Link]; in {
-		ls.list.Remove(link)
+	if _, in := ls.hashByLink[l.Link]; in {
+		//ls.list.Remove(link)
+		return nil, errors.New(fmt.Sprintf("linkStorageCache: can't duplicate link %v", l))
 	}
 	if ls.capacity != 0 {
 		if int64(ls.list.Len()) == ls.capacity {
@@ -56,21 +64,23 @@ func (ls *linkStorage) CreateLink(l *model.Link) (*model.Link, error) {
 	} else {
 		return nil, errors.New("linkStorageCache: cache has 0 capacity")
 	}
-	ls.hash[l.Link] = ls.list.PushBack(l)
-	return ls.hash[l.Link].Value.(*model.Link), nil
+	ls.hashByLink[l.Link] = ls.list.PushBack(l)
+	ls.hashByCode[l.Code] = ls.hashByLink[l.Link]
+	return ls.hashByLink[l.Link].Value.(*model.Link), nil
 }
 
 func (ls *linkStorage) UpdateLink(l *model.Link) (*model.Link, error) {
 	return ls.CreateLink(l)
 }
 
-func (ls *linkStorage) DeleteLink(l string) error {
+func (ls *linkStorage) DeleteLink(l *model.Link) error {
 	ls.Lock()
 	defer ls.Unlock()
-	if link, in := ls.hash[l]; in {
+	if link, in := ls.hashByLink[l.Link]; in {
 		ls.list.Remove(link)
-		delete(ls.hash, l)
+		delete(ls.hashByLink, l.Link)
+		delete(ls.hashByCode, l.Code)
 		return nil
 	}
-	return errors.New(fmt.Sprintf("linkStorageCache: can't find link %s", l))
+	return errors.New(fmt.Sprintf("linkStorageCache: can't find link %v", l))
 }

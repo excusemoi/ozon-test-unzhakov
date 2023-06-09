@@ -1,0 +1,12 @@
+GET http://localhost:8081/getInitialLink/7ARFjTgDHE
+
+###
+
+POST http://localhost:8081/createShortLink
+Content-Type: application/json
+
+{"link": "https://www.youtube.com/"}
+
+###
+
+GET http://localhost:8081/7ARFjTgDHE

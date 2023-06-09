@@ -13,12 +13,16 @@ import (
 	"path/filepath"
 )
 
+func init() {
+
+}
+
 type linkStorage struct {
 	s *pg.DB
 }
 
 func NewLinkStorage() (storage.LinkStorage, error) {
-	err := config.InitConfig(filepath.Join("..", "..", "..", "config"), "config", "yaml")
+	err := config.InitConfig(filepath.Join("..", "..", "..", "config"), os.Getenv("CONFIG_NAME"), "yaml")
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +40,11 @@ func NewLinkStorage() (storage.LinkStorage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &linkStorage{s: s}, nil
+	ls := &linkStorage{s: s}
+	if err = ls.Migrate(); err != nil {
+		return nil, err
+	}
+	return ls, nil
 }
 
 func (ls *linkStorage) Migrate() error {
@@ -52,12 +60,19 @@ func (ls *linkStorage) Migrate() error {
 	return errors.New("linkStoragePg: initialized incorrectly")
 }
 
-func (ls *linkStorage) GetLink(l string) (*model.Link, error) {
+func (ls *linkStorage) Get(l *model.Link) (*model.Link, error) {
 	if ls.s != nil {
+		var err error
 		link := &model.Link{}
-		err := ls.s.Model(link).
-			Where("link = ?", l).
-			Select(link)
+		if l.Link != "" && l.Code != "" {
+			err = ls.s.Model(link).
+				Where("link = ? and code = ?", l.Link, l.Code).
+				Select(link)
+		} else {
+			err = ls.s.Model(link).
+				Where("link = ? or code = ?", l.Link, l.Code).
+				Select(link)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -79,7 +94,8 @@ func (ls *linkStorage) CreateLink(l *model.Link) (*model.Link, error) {
 
 func (ls *linkStorage) UpdateLink(l *model.Link) (*model.Link, error) {
 	if ls.s != nil {
-		_, err := ls.s.Model(l).Where("id = ?", l.Id).Update(l)
+		var err error
+		_, err = ls.s.Model(l).Where("id = ?", l.Id).Update(l)
 		if err != nil {
 			return nil, err
 		}
@@ -88,12 +104,19 @@ func (ls *linkStorage) UpdateLink(l *model.Link) (*model.Link, error) {
 	return nil, errors.New("linkStoragePg: initialized incorrectly")
 }
 
-func (ls *linkStorage) DeleteLink(l string) error {
+func (ls *linkStorage) DeleteLink(l *model.Link) error {
 	if ls.s != nil {
+		var err error
 		link := &model.Link{}
-		_, err := ls.s.Model(link).
-			Where("link = ?", l).
-			Delete()
+		if l.Link != "" && l.Code != "" {
+			_, err = ls.s.Model(link).
+				Where("link = ? and code = ?", l.Link, l.Code).
+				Delete()
+		} else {
+			_, err = ls.s.Model(link).
+				Where("link = ? or code = ?", l.Link, l.Code).
+				Delete()
+		}
 		if err != nil {
 			return err
 		}

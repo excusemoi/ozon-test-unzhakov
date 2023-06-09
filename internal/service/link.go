@@ -3,6 +3,9 @@ package service
 import (
 	"github.com/spf13/viper"
 	"math/rand"
+	"net/url"
+	"os"
+	"ozon-test-unzhakov/internal/config"
 	"ozon-test-unzhakov/internal/dto"
 	"ozon-test-unzhakov/internal/model"
 	"ozon-test-unzhakov/internal/storage/storage"
@@ -12,11 +15,11 @@ import (
 const bytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
 type LinkService interface {
-	GetInitialLink(code string) (*dto.Link, error)
-	CreateShortLink(link string) (*dto.Link, error)
+	GetInitialLink(link *dto.Link) (*dto.Link, error)
+	CreateShortLink(link *dto.Link) (*dto.Link, error)
 	Create(link *dto.Link) (*dto.Link, error)
 	Update(link *dto.Link) (*dto.Link, error)
-	Delete(id string) error
+	Delete(link *dto.Link) error
 }
 
 type linkService struct {
@@ -25,18 +28,21 @@ type linkService struct {
 }
 
 func NewLinkService(s storage.LinkStorage) (LinkService, error) {
-	viper.AddConfigPath(filepath.Join("..", "..", "config"))
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	err := viper.ReadInConfig()
+	err := config.InitConfig(filepath.Join("..", "..", "config"),
+		os.Getenv("CONFIG_NAME"),
+		"yaml")
 	if err != nil {
 		return nil, err
 	}
 	return &linkService{s: s, linksLength: viper.GetInt("linksLength")}, nil
 }
 
-func (ls *linkService) GetInitialLink(c string) (*dto.Link, error) {
-	link, err := ls.s.GetLink(c)
+func (ls *linkService) GetInitialLink(l *dto.Link) (*dto.Link, error) {
+	link, err := ls.s.Get(&model.Link{Code: l.Code, Link: l.Link})
+	if err != nil {
+		return nil, err
+	}
+	_, err = url.ParseRequestURI(link.Link)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +53,15 @@ func (ls *linkService) GetInitialLink(c string) (*dto.Link, error) {
 	}, nil
 }
 
-func (ls *linkService) CreateShortLink(l string) (*dto.Link, error) {
+func (ls *linkService) CreateShortLink(l *dto.Link) (*dto.Link, error) {
 	link, err := ls.s.CreateLink(&model.Link{
-		Link: l,
+		Link: l.Link,
 		Code: ls.Short(),
 	})
+	if err != nil {
+		return nil, err
+	}
+	_, err = url.ParseRequestURI(link.Link)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +81,10 @@ func (ls *linkService) Create(l *dto.Link) (*dto.Link, error) {
 	if err != nil {
 		return nil, err
 	}
+	_, err = url.ParseRequestURI(link.Link)
+	if err != nil {
+		return nil, err
+	}
 	return &dto.Link{
 		Id:   link.Id,
 		Link: link.Link,
@@ -87,6 +101,10 @@ func (ls *linkService) Update(l *dto.Link) (*dto.Link, error) {
 	if err != nil {
 		return nil, err
 	}
+	_, err = url.ParseRequestURI(link.Link)
+	if err != nil {
+		return nil, err
+	}
 	return &dto.Link{
 		Id:   link.Id,
 		Link: link.Link,
@@ -94,8 +112,12 @@ func (ls *linkService) Update(l *dto.Link) (*dto.Link, error) {
 	}, nil
 }
 
-func (ls *linkService) Delete(l string) error {
-	err := ls.s.DeleteLink(l)
+func (ls *linkService) Delete(l *dto.Link) error {
+	err := ls.s.DeleteLink(&model.Link{
+		Id:   l.Id,
+		Link: l.Link,
+		Code: l.Code,
+	})
 	if err != nil {
 		return err
 	}

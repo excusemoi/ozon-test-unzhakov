@@ -53,11 +53,11 @@ func TestLinkStorage_Create(t *testing.T) {
 		input struct{ link *model.Link }
 	}{
 		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "link_1",
+			Link: "https://www.google.com/maps",
 			Code: "link_code_1",
 		}}},
 		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "link_1",
+			Link: "https://github.com/grpc-ecosystem/grpc-gateway#readme",
 			Code: "link_code_1",
 		}}},
 	}
@@ -67,7 +67,7 @@ func TestLinkStorage_Create(t *testing.T) {
 			t.Log(err)
 		}
 		t.Log(*result)
-		err = s.DeleteLink(cases[i].input.link.Link)
+		err = s.DeleteLink(cases[i].input.link)
 		if err != nil {
 			t.Log(err)
 		}
@@ -91,11 +91,11 @@ func TestLinkStorage_Delete(t *testing.T) {
 		input struct{ link *model.Link }
 	}{
 		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "link_1",
+			Link: "https://www.google.com/maps",
 			Code: "link_code_1",
 		}}},
 		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "link_1",
+			Link: "https://github.com/grpc-ecosystem/grpc-gateway#readme",
 			Code: "link_code_1",
 		}}},
 	}
@@ -104,7 +104,7 @@ func TestLinkStorage_Delete(t *testing.T) {
 		if err != nil {
 			t.Log(err)
 		}
-		err = s.DeleteLink(cases[i].input.link.Link)
+		err = s.DeleteLink(cases[i].input.link)
 		if err != nil {
 			t.Log(err)
 		}
@@ -128,11 +128,11 @@ func TestLinkStorage_Get(t *testing.T) {
 		input struct{ link *model.Link }
 	}{
 		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "link_1",
+			Link: "https://www.google.com/maps",
 			Code: "link_code_1",
 		}}},
 		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "link_1",
+			Link: "https://github.com/grpc-ecosystem/grpc-gateway#readme",
 			Code: "link_code_1",
 		}}},
 	}
@@ -141,12 +141,12 @@ func TestLinkStorage_Get(t *testing.T) {
 		if err != nil {
 			t.Log(err)
 		}
-		result, err = s.GetLink(cases[i].input.link.Link)
+		result, err = s.Get(cases[i].input.link)
 		if err != nil {
 			t.Log(err)
 		}
 		t.Log(*result)
-		err = s.DeleteLink(cases[i].input.link.Link)
+		err = s.DeleteLink(cases[i].input.link)
 		if err != nil {
 			t.Log(err)
 		}
@@ -170,11 +170,11 @@ func TestLinkStorage_Update(t *testing.T) {
 		input struct{ link *model.Link }
 	}{
 		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "link_3",
+			Link: "https://www.google.com/maps",
 			Code: "link_code_1",
 		}}},
 		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "link_3",
+			Link: "https://github.com/grpc-ecosystem/grpc-gateway#readme",
 			Code: "link_code_1",
 		}}},
 	}
@@ -188,12 +188,12 @@ func TestLinkStorage_Update(t *testing.T) {
 		if err != nil {
 			t.Log(err)
 		}
-		result, err = s.GetLink(cases[i].input.link.Link)
+		result, err = s.Get(cases[i].input.link)
 		if !strings.Contains(result.Code, "updated") {
 			t.Errorf("link with %d was not updated", cases[i].input.link.Id)
 		}
 		t.Log(*result)
-		err = s.DeleteLink(cases[i].input.link.Link)
+		err = s.DeleteLink(cases[i].input.link)
 		if err != nil {
 			t.Log(err)
 		}

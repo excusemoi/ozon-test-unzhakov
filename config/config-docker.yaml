@@ -1,0 +1,11 @@
+storageType: postgres
+grpcAddress: 127.0.0.1:8082
+httpAddress: :8081
+linksLength: 10
+postgres:
+  login: admin
+  host: db
+  port: 5432
+  name: postgres
+cache:
+  capacity: 1000
