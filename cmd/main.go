@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	orm "github.com/go-pg/pg/v10"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -21,9 +22,10 @@ import (
 	"ozon-test-unzhakov/internal/storage/cache"
 	"ozon-test-unzhakov/internal/storage/pg"
 	"ozon-test-unzhakov/internal/storage/storage"
+	"syscall"
+
 	desc "ozon-test-unzhakov/pkg"
 	"path/filepath"
-	"syscall"
 )
 
 func main() {
@@ -37,6 +39,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ctx := context.Background()
 
 	grpcAddress := viper.GetString("grpcAddress")
 	httpAddress := viper.GetString("httpAddress")
@@ -53,7 +57,21 @@ func main() {
 	case constants.CacheStorageType:
 		linkStorage, err = cache.NewLinkStorage()
 	case constants.PostgresStorageType:
-		linkStorage, err = pg.NewLinkStorage()
+		connectOptions, err := orm.ParseURL("postgres://" +
+			os.Getenv("POSTGRES_USER") + ":" +
+			os.Getenv("POSTGRES_PASSWORD") + "@" +
+			viper.GetString("postgres.host") + ":" +
+			viper.GetString("postgres.port") + "/" +
+			viper.GetString("postgres.name") + "?sslmode=disable")
+		if err != nil {
+			log.Fatal(err)
+		}
+		s := orm.Connect(connectOptions)
+		err = s.Ping(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		linkStorage, err = pg.NewLinkStorage(s)
 	default:
 		log.Fatal(errors.New("unsupported linkStorage type"))
 	}
@@ -61,7 +79,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	linkService, err := service.NewLinkService(linkStorage)
+	linkService, err := service.NewLinkService(linkStorage, viper.GetInt("linksLength"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,7 +90,9 @@ func main() {
 	desc.RegisterMicroserviceServer(grpcServer, microservice)
 
 	mux := runtime.NewServeMux(runtime.WithForwardResponseOption(responseHeaderMatcher))
-	err = desc.RegisterMicroserviceHandlerServer(context.Background(), mux, microservice)
+	err = desc.RegisterMicroserviceHandlerServer(ctx, mux, microservice)
+
+	httpServer := http.Server{Addr: httpAddress, Handler: mux}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,12 +100,23 @@ func main() {
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
 
-	g, _ := errgroup.WithContext(context.Background())
+	go func() {
+		<-exit
+		grpcServer.Stop()
+		httpServer.Shutdown(ctx)
+	}()
+
+	g, _ := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return grpcServer.Serve(listen)
+		err := grpcServer.Serve(listen)
+		return err
 	})
 	g.Go(func() error {
-		return http.ListenAndServe(httpAddress, mux)
+		err := httpServer.ListenAndServe()
+		if err.Error() == "http: Server closed" {
+			return nil
+		}
+		return err
 	})
 
 	log.Printf("service is ready to accept connections on port %s", httpAddress)

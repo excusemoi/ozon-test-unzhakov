@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/spf13/viper"
 	"math/rand"
 	"net/url"
 	"os"
@@ -27,14 +26,14 @@ type linkService struct {
 	linksLength int
 }
 
-func NewLinkService(s storage.LinkStorage) (LinkService, error) {
+func NewLinkService(s storage.LinkStorage, linksLength int) (LinkService, error) {
 	err := config.InitConfig(filepath.Join("..", "..", "config"),
 		os.Getenv("CONFIG_NAME"),
 		"yaml")
 	if err != nil {
 		return nil, err
 	}
-	return &linkService{s: s, linksLength: viper.GetInt("linksLength")}, nil
+	return &linkService{s: s, linksLength: linksLength}, nil
 }
 
 func (ls *linkService) GetInitialLink(l *dto.Link) (*dto.Link, error) {

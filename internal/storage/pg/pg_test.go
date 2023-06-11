@@ -2,6 +2,7 @@ package pg
 
 import (
 	"github.com/joho/godotenv"
+	"github.com/stretchr/testify/require"
 	"log"
 	"ozon-test-unzhakov/internal/model"
 	"path/filepath"
@@ -14,7 +15,7 @@ func TestNewLinkStorage(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = NewLinkStorage()
+	_, err = NewLinkStorage(nil) //TODO mock
 	if err != nil {
 		t.Error(err)
 	}
@@ -25,7 +26,7 @@ func TestLinkStorage_Migrate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s, err := NewLinkStorage()
+	s, err := NewLinkStorage(nil) //TODO mock
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +42,7 @@ func TestLinkStorage_Create(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s, err := NewLinkStorage()
+	s, err := NewLinkStorage(nil) //TODO mock
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,27 +51,40 @@ func TestLinkStorage_Create(t *testing.T) {
 		log.Fatal(err)
 	}
 	cases := []struct {
-		input struct{ link *model.Link }
+		input struct {
+			link *model.Link
+		}
+		expectedErr error
+		name        string
 	}{
-		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "https://www.google.com/maps",
-			Code: "link_code_1",
-		}}},
-		{input: struct{ link *model.Link }{link: &model.Link{
-			Link: "https://github.com/grpc-ecosystem/grpc-gateway#readme",
-			Code: "link_code_1",
-		}}},
+		{
+			input: struct {
+				link *model.Link
+			}{
+				link: &model.Link{
+					Link: "https://www.google.com/maps",
+					Code: "link_code_1",
+				}},
+			name: "valid_case_1",
+		},
+		{
+			input: struct {
+				link *model.Link
+			}{
+				link: &model.Link{
+					Link: "https://github.com/grpc-ecosystem/grpc-gateway#readme",
+					Code: "link_code_1",
+				}},
+			name: "valid_case_2",
+		},
 	}
 	for i := range cases {
-		result, err := s.CreateLink(cases[i].input.link)
-		if err != nil {
-			t.Log(err)
-		}
-		t.Log(*result)
-		err = s.DeleteLink(cases[i].input.link)
-		if err != nil {
-			t.Log(err)
-		}
+		t.Run(cases[i].name, func(t1 *testing.T) {
+			result, err := s.CreateLink(cases[i].input.link)
+			require.ErrorIs(t1, err, cases[i].expectedErr, result)
+			err = s.DeleteLink(cases[i].input.link)
+			require.ErrorIs(t1, err, cases[i].expectedErr, "")
+		})
 	}
 }
 
@@ -79,7 +93,7 @@ func TestLinkStorage_Delete(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s, err := NewLinkStorage()
+	s, err := NewLinkStorage(nil) //TODO mock
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +130,7 @@ func TestLinkStorage_Get(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s, err := NewLinkStorage()
+	s, err := NewLinkStorage(nil) //TODO mock
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +139,9 @@ func TestLinkStorage_Get(t *testing.T) {
 		log.Fatal(err)
 	}
 	cases := []struct {
-		input struct{ link *model.Link }
+		input       struct{ link *model.Link }
+		expectedErr error
+		name        string
 	}{
 		{input: struct{ link *model.Link }{link: &model.Link{
 			Link: "https://www.google.com/maps",
@@ -158,13 +174,13 @@ func TestLinkStorage_Update(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s, err := NewLinkStorage()
+	s, err := NewLinkStorage(nil) //TODO mock
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = s.(*linkStorage).Migrate()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	cases := []struct {
 		input struct{ link *model.Link }
