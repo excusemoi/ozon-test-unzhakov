@@ -1,5 +1,5 @@
 storageType: postgres
-grpcAddress: 0.0.0.0:8086
+grpcAddress: 0.0.0.0:8087
 httpAddress: :8081
 linksLength: 10
 postgres:

@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/go-pg/pg/v10 v10.11.0
+	github.com/golang/mock v1.4.4
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/viper v1.16.0

@@ -98,13 +98,7 @@ func main() {
 	}
 
 	exit := make(chan os.Signal, 1)
-	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-exit
-		grpcServer.Stop()
-		httpServer.Shutdown(ctx)
-	}()
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGTSTP)
 
 	g, _ := errgroup.WithContext(ctx)
 	g.Go(func() error {
@@ -113,10 +107,15 @@ func main() {
 	})
 	g.Go(func() error {
 		err := httpServer.ListenAndServe()
-		if err.Error() == "http: Server closed" {
+		if err.Error() == "http: Server closed" { //TODO better way
 			return nil
 		}
 		return err
+	})
+	g.Go(func() error {
+		<-exit
+		grpcServer.Stop()
+		return httpServer.Shutdown(ctx)
 	})
 
 	log.Printf("service is ready to accept connections on port %s", httpAddress)

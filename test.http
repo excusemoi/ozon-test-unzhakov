@@ -1,16 +1,13 @@
 POST http://localhost:8081/createShortLink
 Content-Type: application/json
 
-{"link": "https://gist.github.com/3"}
+{"link": "https://gist.github.com/4"}
 
 ###
 
-GET http://localhost:8081/getInitialLink/p1TnhlBv2j
+GET http://localhost:8081/getInitialLink/4FhXDb57pV
 
 ###
 
 GET http://localhost:8081/fED3uhrko4
 
-###
-
-GET 127.0.0.1:8082
